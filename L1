@@ -1,3 +1,5 @@
+(* Nosso trabalho *)
+
 type variable = string
 
 type operator = Sum | Diff | Mult | Div | Eq | Leq | Not | And | Or 
@@ -31,6 +33,10 @@ type value = Vnum of int
 and
      env = (variable * value) list
 
+(*Não sei porque tem isso, mas tinha nos outros dois *)
+and
+     tenv = (variable * tipo) list
+
 (* AVALIADOR BIG STEP *)
 let rec eval (context : env) (e : expr) = ( match e with
 
@@ -39,9 +45,9 @@ let rec eval (context : env) (e : expr) = ( match e with
     
     (*  op ∈ {+, −, ∗, div, ==, and, or, not}  *)
     | Bop(op, e1, e2) -> (
-        let e1' = eval context e1 in
-        let e2' = eval context e2 in (
-            match(op, e1', e2') with
+        let exp1 = eval context e1 in
+        let exp2 = eval context e2 in (
+            match(op, exp1, exp2) with
               (Sum, Vnum n1, Vnum n2) -> Vnum(n1 + n2)
             | (Diff, Vnum n1, Vnum n2) -> Vnum(n1 - n2)
             | (Mult, Vnum n1, Vnum n2) -> Vnum(n1 * n2)
@@ -52,68 +58,68 @@ let rec eval (context : env) (e : expr) = ( match e with
             | (Not, Vbool b) -> Vbool(not(b))
             | (_, Raise, _) -> Raise
             | (_, _, Raise) -> Raise
-            | _ -> raise (NoRuleApplies "Binary Operation Error")
+            | _ -> failwith "binary_op_error"
         )
     )
     
     (* if *)
     | If(e1, e2, e3) -> (
-        let e1' = eval context e1 in (
-            match e1' with
+        let exp1 = eval context e1 in (
+            match exp1 with
               (Vbool true) -> eval context e2
             | (Vbool false) -> eval context e3
             | Raise -> Raise
-            | _ -> raise (NoRuleApplies "If condition Error")
+            | _ -> failwith "if_error"
         )
     )
     
-    (* BS-NIL *)
+    (* C-NIL *)
     | Nil -> Vnil
     
     
-    (* BS-CONS *)
+    (* C-CONS *)
     | Cons(e1, e2) -> (
-        let e1' = eval context e1 in
-        let e2' = eval context e2 in (
-            match (e1', e2') with
+        let exp1 = eval context e1 in
+        let exp2 = eval context e2 in (
+            match (exp1, exp2) with
             | (Raise,_) -> Raise
             | (_,Raise) -> Raise
-            | _ -> Vcons(e1',e2')
+            | _ -> Vcons(exp1, exp2)
         )
     )
     
     
     (* is empty *)
     | IsEmpty(e) -> (
-        let e' = eval context e in (
-            match e' with
+        let e1 = eval context e in (
+            match e1 with
             | Vnil -> (Vbool true)
             | Vcons(v1,v2) -> (Vbool false)
             | Raise -> Raise
-            | _ -> raise (NoRuleApplies "Invalid list")
+            | _ -> failwith "is_empty_error"
         )
     )
     
     (* first  *)
     | First(e) -> (
-        let e' = eval context e in (
-            match e' with
+        let e1 = eval context e in (
+            match e1 with
             | Vcons(v1,v2) -> v1
             | Vnil -> Raise
             | Raise -> Raise
-            | _ -> raise (NoRuleApplies "Invalid list")
+            | _ -> failwith "first_error"
         )
     )
     
     
     (* rest *)
     | Rest(e) -> (
-        let e' = eval context e in (
-            match e' with
+        let e1 = eval context e in (
+            match e1 with
             | Vcons(v1,v2) -> v2
             | Vnil -> Raise
             | Raise -> Raise
-            | _ -> raise (NoRuleApplies "Invalid list")
+            | _ -> failwith "rest_error"
         )
     )
     
@@ -123,9 +129,9 @@ let rec eval (context : env) (e : expr) = ( match e with
     
     (* TryWith *)
     | TryWith(e1,e2) -> (
-        let e1' = eval context e1 in (
-            match e1' with
+        let exp1 = eval context e1 in (
+            match exp1 with
             | Raise -> eval context e2
-            | _ -> e1'
+            | _ -> exp1
         )
     )
