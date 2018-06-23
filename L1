@@ -30,3 +30,102 @@ type value = Vnum of int
            | Raise    
 and
      env = (variable * value) list
+
+(* AVALIADOR BIG STEP *)
+let rec eval (context : env) (e : expr) = ( match e with
+
+    Num(n) -> Vnum(n)
+    | Bool(b) -> Vbool(b)
+    
+    (*  op ∈ {+, −, ∗, div, ==, and, or, not}  *)
+    | Bop(op, e1, e2) -> (
+        let e1' = eval context e1 in
+        let e2' = eval context e2 in (
+            match(op, e1', e2') with
+              (Sum, Vnum n1, Vnum n2) -> Vnum(n1 + n2)
+            | (Diff, Vnum n1, Vnum n2) -> Vnum(n1 - n2)
+            | (Mult, Vnum n1, Vnum n2) -> Vnum(n1 * n2)
+            | (Div, Vnum n1, Vnum n2) -> if n2 != 0 then Vnum(n1 / n2) else Raise
+            | (Eq, Vnum n1, Vnum n2) -> Vbool(n1 == n2)
+            | (And, Vbool b1, Vbool b2) -> Vbool(b1 && b2)
+            | (Or, Vbool b1, Vbool b2) -> Vbool(b1 || b2)
+            | (Not, Vbool b) -> Vbool(not(b))
+            | (_, Raise, _) -> Raise
+            | (_, _, Raise) -> Raise
+            | _ -> raise (NoRuleApplies "Binary Operation Error")
+        )
+    )
+    
+    (* if *)
+    | If(e1, e2, e3) -> (
+        let e1' = eval context e1 in (
+            match e1' with
+              (Vbool true) -> eval context e2
+            | (Vbool false) -> eval context e3
+            | Raise -> Raise
+            | _ -> raise (NoRuleApplies "If condition Error")
+        )
+    )
+    
+    (* BS-NIL *)
+    | Nil -> Vnil
+    
+    
+    (* BS-CONS *)
+    | Cons(e1, e2) -> (
+        let e1' = eval context e1 in
+        let e2' = eval context e2 in (
+            match (e1', e2') with
+            | (Raise,_) -> Raise
+            | (_,Raise) -> Raise
+            | _ -> Vcons(e1',e2')
+        )
+    )
+    
+    
+    (* is empty *)
+    | IsEmpty(e) -> (
+        let e' = eval context e in (
+            match e' with
+            | Vnil -> (Vbool true)
+            | Vcons(v1,v2) -> (Vbool false)
+            | Raise -> Raise
+            | _ -> raise (NoRuleApplies "Invalid list")
+        )
+    )
+    
+    (* first  *)
+    | First(e) -> (
+        let e' = eval context e in (
+            match e' with
+            | Vcons(v1,v2) -> v1
+            | Vnil -> Raise
+            | Raise -> Raise
+            | _ -> raise (NoRuleApplies "Invalid list")
+        )
+    )
+    
+    
+    (* rest *)
+    | Rest(e) -> (
+        let e' = eval context e in (
+            match e' with
+            | Vcons(v1,v2) -> v2
+            | Vnil -> Raise
+            | Raise -> Raise
+            | _ -> raise (NoRuleApplies "Invalid list")
+        )
+    )
+    
+    (* raise *)
+    | Raise -> Raise
+    
+    
+    (* TryWith *)
+    | TryWith(e1,e2) -> (
+        let e1' = eval context e1 in (
+            match e1' with
+            | Raise -> eval context e2
+            | _ -> e1'
+        )
+    )
