@@ -1,0 +1,32 @@
+type variable = string
+
+type operator = Sum | Diff | Mult | Div | Eq | Leq | Not | And | Or 
+
+type tipo  = TyInt | TyBool | TyFn of tipo * tipo | TyList of tipo 
+
+type expr = Num of int
+          | Bool of bool
+          | Bop of operator * expr * expr
+          | If of expr * expr * expr
+          | Var of variable
+          | App of expr * expr
+          | Lam of variable * tipo * expr
+          | Let of variable * tipo * expr * expr
+          | Lrec of variable * tipo * tipo * variable * tipo * expr * expr
+          | Nil                  
+          | Cons of expr * expr
+          | IsEmpty of expr
+          | First of expr
+          | Rest of expr
+          | Raise
+          | TryWith of expr * expr
+
+type value = Vnum of int
+           | Vbool of bool
+           | Vclos of variable * expr * env
+           | Vrclos of variable * variable * expr * env
+           | Vnil                    
+           | Vcons of value * value
+           | Raise    
+and
+     env = (variable * value) list
