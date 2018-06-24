@@ -1,5 +1,3 @@
-(* Nosso trabalho *)
-
 type variable = string
 
 type operator = Sum | Diff | Mult | Div | Eq | Leq | Not | And | Or 
