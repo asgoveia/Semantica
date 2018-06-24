@@ -34,10 +34,30 @@ and
 (*Não sei porque tem isso, mas tinha nos outros dois *)
 and
      tenv = (variable * tipo) list
+     
+     
+
+          
+(* Procura por uma variável no ambiente. Usada no C-ID *)
+let rec search variable env : value = match env with
+  | [] -> raise Not_found
+  (* tl pega o resto da lista *)
+  | (name, v)::tl ->
+    if (name == variable)      (* Found the variable in the head *)
+    then v                     (* Returns variable value *)
+else search variable tl ;; (* Look for it in the tale *)     
+     
+     
+     
+     
+     
+     
+     
 
 (* AVALIADOR BIG STEP *)
+(* context do tipo env, e do tipo expr *)
 let rec eval (context : env) (e : expr) = ( match e with
-
+    
     Num(n) -> Vnum(n)
     | Bool(b) -> Vbool(b)
     
@@ -53,7 +73,7 @@ let rec eval (context : env) (e : expr) = ( match e with
             | (Eq, Vnum n1, Vnum n2) -> Vbool(n1 == n2)
             | (And, Vbool b1, Vbool b2) -> Vbool(b1 && b2)
             | (Or, Vbool b1, Vbool b2) -> Vbool(b1 || b2)
-            | (Not, Vbool b) -> Vbool(not(b))
+
             | (_, Raise, _) -> Raise
             | (_, _, Raise) -> Raise
             | _ -> failwith "binary_op_error"
@@ -61,15 +81,23 @@ let rec eval (context : env) (e : expr) = ( match e with
     )
     
     (* if *)
-    | If(e1, e2, e3) -> (
-        let exp1 = eval context e1 in (
-            match exp1 with
-              (Vbool true) -> eval context e2
-            | (Vbool false) -> eval context e3
-            | Raise -> Raise
-            | _ -> failwith "if_error"
+    
+    
+    | If(e1, e2, e3) when ((eval context e1) = Vbool(true)) -> eval context e2
+	| If(e1, e2, e3) when ((eval context e1) = Vbool(false)) -> eval context e3
+    
+    
+    (*
+        | If(e1, e2, e3) -> (
+            let exp1 = eval context e1 in (
+                match exp1 with
+                  (Vbool true) -> eval context e2
+                | (Vbool false) -> eval context e3
+                | Raise -> Raise
+                | _ -> failwith "if_error"
+            )
         )
-    )
+    *)
     
     (* C-NIL *)
     | Nil -> Vnil
@@ -133,3 +161,12 @@ let rec eval (context : env) (e : expr) = ( match e with
             | _ -> exp1
         )
     )
+    
+        
+    (*C-Id*)
+    | Var(v) -> search v context
+
+
+
+)
+
