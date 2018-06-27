@@ -1,25 +1,3 @@
-(*
-    C-Num   
-    C-Bool  
-    C-Sum   
-    C-Eq    
-    C-If    
-    C-Id    
-    C-App   
-    C-Fn    
-    C-Let   
-    C-LetR  
-    C-Nil     
-    C-Cons    
-    C-Hd      
-    C-Tl      
-    C-IsEmpty 
-    C-Raise   
-    C-Try     
-*)
-
-
-
 (* TODO: arrumar raise *)
 
 
@@ -93,8 +71,8 @@ else search variable tl ;; (* Look for it in the tale *)
 
 
 (* Função para procurar uma variável no sistema de tipos *)
-let rec lookupT variable environment : tipo = match environment with
-  | [] -> raise Variable_not_found
+let rec lookupT variable context : tipo = match context with
+  | [] -> raise Not_found
   | (name, v)::tl ->
     if (name == variable)        
     then v                      
@@ -287,9 +265,10 @@ let rec typecheck context e : tipo = match e with
       let tipoe2 = typecheck context e2 in
       let tipoe3 = typecheck context e3 in
           if tipoe1 == TyBool && tipoe2 == tipoe3 then tipoe2 else raise Not_found
-          
+  (* FN *)        
     
-  | Fun(v, t, e) -> TyFn(t, (typecheck((v t)::context) e))
+  | Lam(v, t, e) -> TyFn(t, (typecheck((v t)::context) e))
+  | LamI(v, e) -> TyFn(typecheck((v)::context) e)
   
   (* ID *)
   | Var(v) -> lookupT v context
