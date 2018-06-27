@@ -13,13 +13,17 @@ type expr = Num of int
           | Lam of variable * tipo * expr
           | Let of variable * tipo * expr * expr
           | Lrec of variable * tipo * tipo * variable * tipo * expr * expr
-          | Nil                  
+          | Nil                   
           | Cons of expr * expr
           | IsEmpty of expr
           | First of expr
           | Rest of expr
           | Raise
           | TryWith of expr * expr
+          | LamI of variable * expr
+          | LetI of variable * expr * expr
+          | LrecI of variable * variable * expr * expr
+          | Uop of operator * expr
 
 type value = Vnum of int
            | Vbool of bool
@@ -35,9 +39,7 @@ and
 and
      tenv = (variable * tipo) list
      
-     
-
-          
+              
 (* Procura por uma variável no ambiente. Usada no C-ID *)
 let rec search variable env : value = match env with
   | [] -> raise Not_found
@@ -46,10 +48,6 @@ let rec search variable env : value = match env with
     if (name == variable)      (* Found the variable in the head *)
     then v                     (* Returns variable value *)
 else search variable tl ;; (* Look for it in the tale *)     
-     
-     
-     
-     
      
      
      
@@ -79,27 +77,29 @@ let rec eval (context : env) (e : expr) = ( match e with
         )
     )
     
+    | Uop (op, e) -> (
+        let exp1 = eval context e in(
+            match (op, exp1) with
+                (Not, Vbool b) -> Vbool(not(b))
+              | (_, Raise) -> Raise
+              | _ -> failwith "unary_op_error"
+        )
+    )
+    
     (* if *)
-    
-    
-    | If(e1, e2, e3) when ((eval context e1) = Vbool(true)) -> eval context e2
-	| If(e1, e2, e3) when ((eval context e1) = Vbool(false)) -> eval context e3
-    
-    
-    (*
-        | If(e1, e2, e3) -> (
-            let exp1 = eval context e1 in (
-                match exp1 with
-                  (Vbool true) -> eval context e2
+    | If(e1, e2, e3) -> (
+        let exp1 = eval context e1 in (
+            match exp1 with
+                (Vbool true) -> eval context e2
                 | (Vbool false) -> eval context e3
                 | Raise -> Raise
                 | _ -> failwith "if_error"
-            )
         )
-    *)
+    )
     
-    (* C-NIL *)
+     (* C-NIL *)
     | Nil -> Vnil
+   
     
     
     (* C-CONS *)
@@ -162,25 +162,43 @@ let rec eval (context : env) (e : expr) = ( match e with
     )
     
         
-    (C-Id)
+    (*BS-Id*)
     | Var(v) -> search v context
     
-    (* Function to update environment *)
-    let update variable v context : env = match context with
-    | [] -> [(variable, v)]
-    | hd::tl -> List.append [(variable, v)] context ;;
-    
-    (C-App)
-    | App(e1, e2) ->
-        let exp1 = eval context e1 in
-        let exp2 = eval context e2 in
-        (match exp1, exp2 with
-            Vclos(variable, e, envA), value -> eval (update variable value envA) e
-            | Vrclos(f, x, e, envA), value -> eval (update f (Vrclos(f, x, e, envA)) (update x value envA)) e
-            | _ -> raise InvalidEval
+
+    (*BS-App*)    
+    | App(e1, e2) -> (
+        let e1' = eval context e1 in
+        let e2' = eval context e2 in (
+            match(e1', e2') with
+            | (Vclos(x, e, envA), v) -> eval ((x,v)::envA) e
+            | (Vrclos(f, x, e, envA), v) -> eval ((x,v)::(f,Vrclos(f,x,e,envA))::envA) e
+            | (Raise,_) -> Raise
+            | (_,Raise) -> Raise
+            | _ -> failwith "app_error"
         )
+    )
 
+    (* BS-FN *)
+    | Lam(x, t, e) -> Vclos(x, e, context)
+    | LamI(x, e) -> Vclos(x, e, context)
+    
+    (* BS-LET *)
+    | Let(x, t, e1, e2) -> let exp1 = (eval context e1) in (
+                               match exp1 with
+                               | Raise -> Raise
+                               | _ -> eval ((x,exp1)::context) e2
+                            )
+    | LetI(x, e1, e2) -> let exp1 = (eval context e1) in (
+                               match exp1 with
+                               | Raise -> Raise
+                               | _ -> eval ((x,exp1)::context) e2
+                         )
 
-
+    (* BS-LETREC *)
+    | Lrec(f,t1,t2,x,t1',e1,e2) -> let rclos = Vrclos(f,x,e1,context) in
+                                       eval ((f,rclos)::context) e2
+    | LrecI(f,x,e1,e2) -> let rclos = Vrclos(f,x,e1,context) in
+                                      eval ((f,rclos)::context) e2
 
 )
