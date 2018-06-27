@@ -41,7 +41,7 @@ and
      env = (variable * value) list
 
 and
-     tenv = (variable * tipo) list
+     envt = (variable * tipo) list
      
      
      
@@ -77,12 +77,18 @@ let rec lookupT variable context : tipo = match context with
     if (name == variable)        
     then v                      
 else lookupT variable tl ;; 
+
+
+(* Declaração de exceções *)
+
+exception Invalid_input ;;
+exception InvalidType ;;
      
      
 
 (* AVALIADOR BIG STEP *)
 (* context do tipo env, e do tipo expr *)
-let rec eval (context : env) (e : expr) = ( match e with
+let rec eval context e  = ( match e with
     
     Num(n) -> Vnum(n)
     | Bool(b) -> Vbool(b)
@@ -229,13 +235,26 @@ let rec eval (context : env) (e : expr) = ( match e with
     | LrecI(f,x,e1,e2) -> let rclos = Vrclos(f,x,e1,context) in
                                       eval ((f,rclos)::context) e2
 
-)
+);;
+
+
+
+ (* Function to update environment of TYPES *)
+  let updateT variable tipo environment : envt = match environment with
+  | [] -> [(variable, tipo)]
+  | hd::tl -> List.append [(variable,tipo)] environment ;;
+
+
+
+
+
+
 
 
 (* TypeInfer *)
 
 
-let rec typecheck context e : tipo = match e with
+let rec typecheck context e: tipo = match e with
   (* Values *)
     Num(v)  -> TyInt
   | Bool(b) -> TyBool
@@ -264,22 +283,38 @@ let rec typecheck context e : tipo = match e with
       let tipoe1 = typecheck context e1 in
       let tipoe2 = typecheck context e2 in
       let tipoe3 = typecheck context e3 in
-          if tipoe1 == TyBool && tipoe2 == tipoe3 then tipoe2 else raise Not_found
-  (* FN *)        
-    
-  | Lam(v, t, e) -> TyFn(t, (typecheck((v t)::context) e))
-  | LamI(v, e) -> TyFn(typecheck((v)::context) e)
+          if tipoe1 == TyBool && tipoe2 == tipoe3 then tipoe2 else raise Invalid_input
+          
+  (* FN *)    
+  | Lam(variable, t, e) -> TyFn(t, (typecheck (updateT variable t context) e))
   
   (* ID *)
   | Var(v) -> lookupT v context
   
   
+  
+
+  (* Application *)
+  | App(e1,e2) ->
+    let exp1 = typecheck context e1 in
+    let exp2 = typecheck context e2 in
+    (match exp1 with
+      TyFn(t1,t2) -> (if t1 == exp2
+          then t2
+          else raise InvalidType)
+      |_ -> raise InvalidType)
+
+  (* Let *)
+  | Let(variable, t, e1, e2) ->
+    let x = typecheck context e1 in
+    (if x == t (*if the expression e1 is right (of type t)*)
+        then typecheck (updateT variable t context) e2 (*ten the output is of typecheck(e2)*)
+        else raise InvalidType)
+
+;;
 
 
 
-
-
-
-let expBopSum = eval []  (If(IsEmpty((Cons (Num(5), Nil))),Bool(true),Num(2)));;
+let expBopSum = eval []  (Bop(Sum,Num(5),Num(10)));;
 let x = exprToString(expBopSum);;
 Printf.printf "%s" x;;
