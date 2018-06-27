@@ -45,11 +45,17 @@ and
      
      
      
+
+exception Invalid_input ;;
+exception InvalidType ;;
+exception InvalidSearch ;;  
+exception InvalidLookupT ;;
+     
      
 let rec exprToString (v:value) : string =
   match v with
-  | Vbool(v1) -> "Bool"
   | Vnum(v1)  -> "Num"
+  | Vbool(v1) -> "Bool"
   | Vclos (var1, expr1, env1) -> "clos"
   | Vrclos(var1,var2,expr1,env) -> "rclos"
   | Vnil -> "Nil"
@@ -57,11 +63,21 @@ let rec exprToString (v:value) : string =
   | Raise -> "raise"
 ;;
 
+
+let rec typeToString (t:tipo) : string =
+  match t with
+  | TyInt -> "TyInt"
+  | TyBool -> "TyBool"
+  | TyFn(t1,t2) -> let t1' = typeToString(t1) in let t2' = typeToString(t2) in "lam("^t1'^"->"^t2'^")"
+  | Raise -> "Raise"
+  | _ -> failwith "erro_no_matching_de_tipos"
+;;
+
      
               
 (* Procura por uma variável no ambiente. Usada no ID *)
 let rec search variable env : value = match env with
-  | [] -> raise Not_found
+  | [] -> raise InvalidSearch
   (* tl pega o resto da lista *)
   | (name, v)::tl ->
     if (name == variable)      (* Found the variable in the head *)
@@ -72,7 +88,7 @@ else search variable tl ;; (* Look for it in the tale *)
 
 (* Função para procurar uma variável no sistema de tipos *)
 let rec lookupT variable context : tipo = match context with
-  | [] -> raise Not_found
+  | [] -> raise InvalidLookupT
   | (name, v)::tl ->
     if (name == variable)        
     then v                      
@@ -81,9 +97,6 @@ else lookupT variable tl ;;
 
 (* Declaração de exceções *)
 
-exception Invalid_input ;;
-exception InvalidType ;;
-     
      
 
 (* AVALIADOR BIG STEP *)
@@ -316,5 +329,14 @@ let rec typecheck context e: tipo = match e with
 
 
 let expBopSum = eval []  (Bop(Sum,Num(5),Num(10)));;
+let expIsEmptyBool = eval [] (If(IsEmpty(Nil),Bool(true),Bool(false)));;
 let x = exprToString(expBopSum);;
-Printf.printf "%s" x;;
+Printf.printf "======  %s   ========" x;;
+
+let tipoBopNum = typecheck [] (Bop(Sum,Num(5),Num(10)));;
+let tipoBopBool = typecheck [] (Bop(Or,Bool(true),Bool(false)));;
+let tipoIfBool = typecheck [] (If(Bool(true),Bool(true),Bool(false)));;
+let tipoLetFn = typecheck [] (Let("myVar", TyInt, Num(5), Bop(Sum,Var("myVar"), Num(5))));;
+
+let y =  typeToString(tipoLetFn);;
+Printf.printf "=======  %s  ========" y;
