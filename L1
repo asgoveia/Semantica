@@ -1,3 +1,25 @@
+(*
+    Num   ok
+    Bool  ok
+    Sum   ok
+    Eq    ok
+    If    ok 
+    Id    ok
+    App   ok
+    Fn    ok
+    Let   ok
+    LetR  ok
+    Nil     ok
+    Cons    ok
+    Hd      ok
+    Tl      ok
+    IsEmpty ok
+    Raise   ok
+    Try     ok
+*)
+
+
+
 type variable = string
 
 type operator = Sum | Diff | Mult | Div | Eq | Leq | Not | And | Or 
@@ -35,12 +57,26 @@ type value = Vnum of int
 and
      env = (variable * value) list
 
-(*Não sei porque tem isso, mas tinha nos outros dois *)
 and
      tenv = (variable * tipo) list
      
+     
+     
+     
+let rec exprToString (v:value) : string =
+  match v with
+  | Vbool(v1) -> "Bool"
+  | Vnum(v1)  -> "Num"
+  | Vclos (var1, expr1, env1) -> "clos"
+  | Vrclos(var1,var2,expr1,env) -> "rclos"
+  | Vnil -> "Nil"
+  | Vcons(val1, val2) -> "Cons"
+  | Raise -> "raise"
+;;
+
+     
               
-(* Procura por uma variável no ambiente. Usada no C-ID *)
+(* Procura por uma variável no ambiente. Usada no ID *)
 let rec search variable env : value = match env with
   | [] -> raise Not_found
   (* tl pega o resto da lista *)
@@ -202,3 +238,8 @@ let rec eval (context : env) (e : expr) = ( match e with
                                       eval ((f,rclos)::context) e2
 
 )
+
+
+let expBopSum = eval []  (If(IsEmpty((Cons (Num(5), Nil))),Bool(true),Num(2)));;
+let x = exprToString(expBopSum);;
+Printf.printf "%s" x;;
