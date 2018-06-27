@@ -5,7 +5,7 @@ type variable = string
 
 type operator = Sum | Diff | Mult | Div | Eq | Leq | Not | And | Or 
 
-type tipo  = TyInt | TyBool | TyFn of tipo * tipo | TyList of tipo | Raise
+type tipo  = TyInt | TyBool | TyFn of tipo * tipo | TyIntList | TyBoolList | TyFnList | Raise
 
 type tratamento = Raise
 
@@ -18,7 +18,7 @@ type expr = Num of int
           | Lam of variable * tipo * expr
           | Let of variable * tipo * expr * expr
           | Lrec of variable * tipo * tipo * variable * tipo * expr * expr
-          | Nil                   
+          | Nil of expr            
           | Cons of expr * expr
           | IsEmpty of expr
           | First of expr
@@ -145,7 +145,7 @@ let rec eval context e  = ( match e with
     )
     
      (* C-NIL *)
-    | Nil -> Vnil
+    | Nil(l) -> Vnil
    
     
     
@@ -266,6 +266,27 @@ let rec eval context e  = ( match e with
 
 (* TypeInfer *)
 
+(*
+(C-Num) V
+(C-Bool) V
+(C-Sum) V
+(C-Eq) V
+(C-If) V
+(C-App) V
+(C-ID) V
+(C-Fn) V
+(C-Let) V
+(C-LetR)
+(C-Nil) ?
+(C-Cons)
+(C-Hd)
+(C-Tl)
+(C-IsEmpty)
+(C-Raise)
+(C-Try)
+
+*)
+
 
 let rec typecheck context e: tipo = match e with
   (* Values *)
@@ -323,7 +344,46 @@ let rec typecheck context e: tipo = match e with
     (if x == t (*if the expression e1 is right (of type t)*)
         then typecheck (updateT variable t context) e2 (*ten the output is of typecheck(e2)*)
         else raise InvalidType)
+    
+  (* Let Rec 
+  | Lrec(func, (ty1, ty2), (var, ty3, e1), e2) ->
+    let ty4 = TyFn(ty1,ty2) in
+    let update1 = updateT var ty3 environment in
+    let update2 = updateT func ty4 update1 in
+    let ty5 = typecheck update2 e1 in (
+      if ty5 == ty2 && ty1 == ty3
+      then typecheck (updateT func ty4 environment) e2
+      else raise InvalidType
+    )
+    *)
 
+    
+  (*C-Nil*)
+  | Nil(l) ->
+      let tipoL = typecheck context l in
+      (match tipoL with
+          TyInt -> TyIntList
+        | TyBool -> TyBoolList
+        | TyFn(t1,t2) -> TyFnList 
+    )
+    
+    
+  (*C-Cons*)
+  | Cons(exp1, exp2) ->
+      (*verifica os tipos dos argumentos*)
+      let tExp1 = typecheck context exp1 in 
+      let tExp2 = typecheck context exp2 in
+      (match tExp1, tExp2 with
+        (_,Nil) -> tExp1
+        | (_,_) -> if (tExp1 == (typecheck context List.hd exp2)) then tExp2 else raise InvalidType
+        
+          
+      )
+
+  
+ 
+    
+    
 ;;
 
 
