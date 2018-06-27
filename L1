@@ -1,25 +1,3 @@
-(*
-    Num   ok
-    Bool  ok
-    Sum   ok
-    Eq    ok
-    If    ok 
-    Id    ok
-    App   ok
-    Fn    ok
-    Let   ok
-    LetR  ok
-    Nil     ok
-    Cons    ok
-    Hd      ok
-    Tl      ok
-    IsEmpty ok
-    Raise   ok
-    Try     ok
-*)
-
-
-
 type variable = string
 
 type operator = Sum | Diff | Mult | Div | Eq | Leq | Not | And | Or 
