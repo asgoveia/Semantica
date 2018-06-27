@@ -73,7 +73,6 @@ let rec eval (context : env) (e : expr) = ( match e with
             | (Eq, Vnum n1, Vnum n2) -> Vbool(n1 == n2)
             | (And, Vbool b1, Vbool b2) -> Vbool(b1 && b2)
             | (Or, Vbool b1, Vbool b2) -> Vbool(b1 || b2)
-
             | (_, Raise, _) -> Raise
             | (_, _, Raise) -> Raise
             | _ -> failwith "binary_op_error"
@@ -163,10 +162,25 @@ let rec eval (context : env) (e : expr) = ( match e with
     )
     
         
-    (*C-Id*)
+    (C-Id)
     | Var(v) -> search v context
+    
+    (* Function to update environment *)
+    let update variable v context : env = match context with
+    | [] -> [(variable, v)]
+    | hd::tl -> List.append [(variable, v)] context ;;
+    
+    (C-App)
+    | App(e1, e2) ->
+        let exp1 = eval context e1 in
+        let exp2 = eval context e2 in
+        (match exp1, exp2 with
+            Vclos(variable, e, envA), value -> eval (update variable value envA) e
+            | Vrclos(f, x, e, envA), value -> eval (update f (Vrclos(f, x, e, envA)) (update x value envA)) e
+            | _ -> raise InvalidEval
+        )
+
 
 
 
 )
-
