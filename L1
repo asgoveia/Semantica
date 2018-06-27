@@ -1,8 +1,35 @@
+(*
+    C-Num   
+    C-Bool  
+    C-Sum   
+    C-Eq    
+    C-If    
+    C-Id    
+    C-App   
+    C-Fn    
+    C-Let   
+    C-LetR  
+    C-Nil     
+    C-Cons    
+    C-Hd      
+    C-Tl      
+    C-IsEmpty 
+    C-Raise   
+    C-Try     
+*)
+
+
+
+(* TODO: arrumar raise *)
+
+
 type variable = string
 
 type operator = Sum | Diff | Mult | Div | Eq | Leq | Not | And | Or 
 
-type tipo  = TyInt | TyBool | TyFn of tipo * tipo | TyList of tipo 
+type tipo  = TyInt | TyBool | TyFn of tipo * tipo | TyList of tipo | Raise
+
+type tratamento = Raise
 
 type expr = Num of int
           | Bool of bool
@@ -61,8 +88,17 @@ let rec search variable env : value = match env with
   | (name, v)::tl ->
     if (name == variable)      (* Found the variable in the head *)
     then v                     (* Returns variable value *)
-else search variable tl ;; (* Look for it in the tale *)     
-     
+else search variable tl ;; (* Look for it in the tale *)  
+
+
+
+(* Função para procurar uma variável no sistema de tipos *)
+let rec lookupT variable environment : tipo = match environment with
+  | [] -> raise Variable_not_found
+  | (name, v)::tl ->
+    if (name == variable)        
+    then v                      
+else lookupT variable tl ;; 
      
      
 
@@ -216,6 +252,53 @@ let rec eval (context : env) (e : expr) = ( match e with
                                       eval ((f,rclos)::context) e2
 
 )
+
+
+(* TypeInfer *)
+
+
+let rec typecheck context e : tipo = match e with
+  (* Values *)
+    Num(v)  -> TyInt
+  | Bool(b) -> TyBool
+
+  (* Binary operations *)
+  | Bop(op,exp1,exp2) ->
+    let ope1 = typecheck context exp1 in
+    let ope2 = typecheck context exp2 in
+    (
+        match op, ope1, ope2 with
+          Sum, TyInt, TyInt -> TyInt
+        | Diff, TyInt, TyInt -> TyInt
+        | Mult, TyInt, TyInt -> TyInt
+        | Div, TyInt, TyInt -> TyInt
+        | Eq, TyBool, TyBool -> TyBool
+        | Eq, TyInt, TyInt -> TyBool
+        | And, TyBool, TyBool -> TyBool
+        | Or, TyBool, TyBool -> TyBool
+        | (_, Raise, TyBool) -> TyBool
+        | (_, TyBool, Raise) -> TyBool 
+        (*| _ -> raise *)
+    )
+    
+  (* Conditional *)
+  | If(e1,e2,e3) ->
+      let tipoe1 = typecheck context e1 in
+      let tipoe2 = typecheck context e2 in
+      let tipoe3 = typecheck context e3 in
+          if tipoe1 == TyBool && tipoe2 == tipoe3 then tipoe2 else raise Not_found
+          
+    
+  | Fun(v, t, e) -> TyFn(t, (typecheck((v t)::context) e))
+  
+  (* ID *)
+  | Var(v) -> lookupT v context
+  
+  
+
+
+
+
 
 
 let expBopSum = eval []  (If(IsEmpty((Cons (Num(5), Nil))),Bool(true),Num(2)));;
