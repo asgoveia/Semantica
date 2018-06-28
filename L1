@@ -1,28 +1,3 @@
-(* TODO: arrumar raise *)
-
-
-(*
-    C-Num    ok
-    C-Bool   ok
-    C-Sum    ok
-    C-Eq     ok
-    C-If     ok
-    C-Id     ok
-    C-App    ok
-    C-Fn     ok
-    C-Let    ok
-    C-LetR   
-    C-Nil    ok
-    C-Cons   ok
-    C-Hd
-    C-Tl
-    C-Isempty
-    C-Raise
-    C-Try
-
-*)
-
-
 
 type variable = string
 
@@ -95,20 +70,21 @@ let rec typeToString (t:tipo) : string =
   | _ -> failwith "erro_no_matching_de_tipos"
 ;;
 
+let updateT variable tipo context : envt = match context with
+  | [] -> [(variable, tipo)]
+| hd::tl -> List.append [(variable,tipo)] context ;;
      
               
-(* Procura por uma variável no ambiente. Usada no ID *)
+
 let rec search variable env : value = match env with
   | [] -> raise InvalidSearch
-  (* tl pega o resto da lista *)
   | (name, v)::tl ->
-    if (name == variable)      (* Found the variable in the head *)
-    then v                     (* Returns variable value *)
-else search variable tl ;; (* Look for it in the tale *)  
+    if (name == variable)     
+    then v                     
+else search variable tl ;; 
 
 
 
-(* Função para procurar uma variável no sistema de tipos *)
 let rec lookupT variable context : tipo = match context with
   | [] -> raise InvalidLookupT
   | (name, v)::tl ->
@@ -117,18 +93,12 @@ let rec lookupT variable context : tipo = match context with
 else lookupT variable tl ;; 
 
 
-(* Declaração de exceções *)
-
-     
-
 (* AVALIADOR BIG STEP *)
-(* context do tipo env, e do tipo expr *)
+
 let rec eval context e  = ( match e with
     
     Num(n) -> Vnum(n)
     | Bool(b) -> Vbool(b)
-    
-    (*  op ∈ {+, −, ∗, div, ==, and, or, not}  *)
     | Bop(op, e1, e2) -> (
         let exp1 = eval context e1 in
         let exp2 = eval context e2 in (
@@ -155,7 +125,7 @@ let rec eval context e  = ( match e with
         )
     )
     
-    (* if *)
+
     | If(e1, e2, e3) -> (
         let exp1 = eval context e1 in (
             match exp1 with
@@ -166,12 +136,11 @@ let rec eval context e  = ( match e with
         )
     )
     
-     (* BS-NIL *)
+
     | Nil -> Vnil
    
     
-    
-    (* C-CONS *)
+
     | Cons(e1, e2) -> (
         let exp1 = eval context e1 in
         let exp2 = eval context e2 in (
@@ -194,7 +163,7 @@ let rec eval context e  = ( match e with
         )
     )
     
-    (* first  *)
+
     | First(e) -> (
         let e1 = eval context e in (
             match e1 with
@@ -206,7 +175,7 @@ let rec eval context e  = ( match e with
     )
     
     
-    (* rest *)
+
     | Rest(e) -> (
         let e1 = eval context e in (
             match e1 with
@@ -217,11 +186,11 @@ let rec eval context e  = ( match e with
         )
     )
     
-    (* raise *)
+
     | Raise -> Raise
     
     
-    (* TryWith *)
+
     | TryWith(e1,e2) -> (
         let exp1 = eval context e1 in (
             match exp1 with
@@ -231,11 +200,11 @@ let rec eval context e  = ( match e with
     )
     
         
-    (*BS-Id*)
+
     | Var(v) -> search v context
     
 
-    (*BS-App*)    
+
     | App(e1, e2) -> (
         let e1' = eval context e1 in
         let e2' = eval context e2 in (
@@ -248,11 +217,11 @@ let rec eval context e  = ( match e with
         )
     )
 
-    (* BS-FN *)
+
     | Lam(x, t, e) -> Vclos(x, e, context)
     | LamI(x, e) -> Vclos(x, e, context)
     
-    (* BS-LET *)
+
     | Let(x, t, e1, e2) -> let exp1 = (eval context e1) in (
                                match exp1 with
                                | Raise -> Raise
@@ -264,7 +233,7 @@ let rec eval context e  = ( match e with
                                | _ -> eval ((x,exp1)::context) e2
                          )
 
-    (* BS-LETREC *)
+
     | Lrec(f,t1,t2,x,t1',e1,e2) -> let rclos = Vrclos(f,x,e1,context) in
                                        eval ((f,rclos)::context) e2
     | LrecI(f,x,e1,e2) -> let rclos = Vrclos(f,x,e1,context) in
@@ -274,22 +243,13 @@ let rec eval context e  = ( match e with
 
 
 
- (* Function to update environment of TYPES *)
-  let updateT variable tipo environment : envt = match environment with
-  | [] -> [(variable, tipo)]
-  | hd::tl -> List.append [(variable,tipo)] environment ;;
-
-
-
 (* TypeInfer *)
-
-
 let rec typecheck context e: tipo = match e with
-  (* Values *)
+
     Num(v)  -> TyInt
   | Bool(b) -> TyBool
 
-  (* Binary operations *)
+
   | Bop(op,exp1,exp2) ->
     let ope1 = typecheck context exp1 in
     let ope2 = typecheck context exp2 in
@@ -308,22 +268,21 @@ let rec typecheck context e: tipo = match e with
         (*| _ -> raise *)
     )
     
-  (* Conditional *)
+
   | If(e1,e2,e3) ->
       let tipoe1 = typecheck context e1 in
       let tipoe2 = typecheck context e2 in
       let tipoe3 = typecheck context e3 in
           if tipoe1 == TyBool && tipoe2 == tipoe3 then tipoe2 else raise Invalid_input
           
-  (* FN *)    
+    
   | Lam(variable, t, e) -> TyFn(t, (typecheck (updateT variable t context) e))
   
-  (* ID *)
+
   | Var(v) -> lookupT v context
   
-  
 
-  (* Application *)
+
   | App(e1,e2) ->
     let exp1 = typecheck context e1 in
     let exp2 = typecheck context e2 in
@@ -333,36 +292,45 @@ let rec typecheck context e: tipo = match e with
           else raise InvalidType)
       |_ -> raise InvalidType)
 
-  (* Let *)
+
   | Let(variable, t, e1, e2) ->
     let x = typecheck context e1 in
-    (if x == t (*if the expression e1 is right (of type t)*)
-        then typecheck (updateT variable t context) e2 (*ten the output is of typecheck(e2)*)
+    (if x == t 
+        then typecheck (updateT variable t context) e2 
         else raise InvalidType)
         
         
-  (*C-Nil*)
+
   | Nil -> TyEmpty
     
-    
-  (*C-Cons*)
+
   | Cons(exp1, exp2) ->
     (let t1 = typecheck context exp1 in
      let t2 = typecheck context exp2 in
-        if t1 = t2
-          then ( match t1 with
-            | TyInt -> TyIntList
-            | TyBool -> TyBoolList
-            | TyFn (t1,t2) -> TyFnList
-            | _ -> raise InvalidType)
-          else(
-              if (t2 = TyEmpty)
-                then t1
-              else raise InvalidType
-              )
+        ( match t2 with
+            | TyIntList -> 
+                if t1 = TyInt then t2
+                else raise InvalidType
+            | TyBoolList -> 
+                if t1 = TyBool then t2
+                else raise InvalidType
+            | _ -> raise InvalidType
+        )
+         
     )
     
-    
+
+  | First(exp1) -> 
+      (let t1 = typecheck context exp1 in
+        (match t1 with
+            TyIntList -> TyInt
+           |TyBoolList -> TyBool
+           |TyEmpty -> TyEmpty
+           |_ -> raise InvalidType
+        )
+    )
+      
+      
 
 let env = [];;
 let num = Num(3) ;;
@@ -371,16 +339,14 @@ let f = Bool(false);;
 let sum = Bop(Mult, Num(4), Num(5));;
 let ou = Bop(And, t, t);;
 let var = "variavelInt" ;;
-let lam = Lam(var,TyInt,sum);; (* int -> int *)
+let lam = Lam(var,TyInt,sum);;
 let currentEnv = updateT (var) (TyInt) (env);;
 let testeIf = If((t,t,f));;
 let app = App(lam,num) ;;
 let varBool = "variavelBool";;
 let envBool = updateT (varBool) (TyBool) (env);;
 let testeLet = Let(varBool, TyBool, testeIf, sum);;
-
-
-(*let testeLetRec = Lrec(varBool, TyInt,TyInt,varBool,TyInt,sum,sum);;*)
+let testeFirst = First((Cons (Num(5), Nil)));;
 
 
 Printf.printf "If((t,t,f)):  %s" (typeToString (typecheck [] testeIf)) ;;
@@ -392,9 +358,3 @@ print_newline();;
 Printf.printf "Let(variavelBool, TyBool, testeIf, sum): %s" (typeToString (typecheck envBool testeLet)) ;;
 print_newline();;
 Printf.printf "Id(variavelInt): %s" (typeToString (typecheck (currentEnv) (Var(var)))) ;;
-
-
-
-(*print_newline();;
-Printf.printf "Lrec(variavelBool, (TyInt,TyInt), (varBool,TyInt,sum), sum): %s" (typeToString (typecheck envBool testeLetRec)) ;; *)
-
