@@ -5,9 +5,7 @@ type variable = string
 
 type operator = Sum | Diff | Mult | Div | Eq | Leq | Not | And | Or 
 
-type tipo  = TyInt | TyBool | TyFn of tipo * tipo | TyIntList | TyBoolList | TyFnList | Raise
-
-type tratamento = Raise
+type tipo  = TyInt | TyBool | TyFn of tipo * tipo | TyIntList | TyBoolList | TyFnList | TyEmpty | Raise
 
 type expr = Num of int
           | Bool of bool
@@ -18,7 +16,7 @@ type expr = Num of int
           | Lam of variable * tipo * expr
           | Let of variable * tipo * expr * expr
           | Lrec of variable * tipo * tipo * variable * tipo * expr * expr
-          | Nil of expr            
+          | Nil      
           | Cons of expr * expr
           | IsEmpty of expr
           | First of expr
@@ -145,7 +143,7 @@ let rec eval context e  = ( match e with
     )
     
      (* C-NIL *)
-    | Nil(l) -> Vnil
+    | Nil -> Vnil
    
     
     
@@ -359,27 +357,27 @@ let rec typecheck context e: tipo = match e with
 
     
   (*C-Nil*)
-  | Nil(l) ->
-      let tipoL = typecheck context l in
-      (match tipoL with
-          TyInt -> TyIntList
-        | TyBool -> TyBoolList
-        | TyFn(t1,t2) -> TyFnList 
-    )
+  | Nil -> TyEmpty
     
     
   (*C-Cons*)
   | Cons(exp1, exp2) ->
-      (*verifica os tipos dos argumentos*)
-      let tExp1 = typecheck context exp1 in 
-      let tExp2 = typecheck context exp2 in
-      (match tExp1, tExp2 with
-        (_,Nil) -> tExp1
-        | (_,_) -> if (tExp1 == (typecheck context List.hd exp2)) then tExp2 else raise InvalidType
-        
-          
-      )
+    (let t1 = typecheck context exp1 in
+     let t2 = typecheck context exp2 in
+        if t1 = t2
+          then ( match t1 with
+            | TyInt -> TyIntList
+            | TyBool -> TyBoolList
+            | TyFn (t1,t2) -> TyFnList
+            | _ -> raise InvalidType)
+          else(
+              if (t2 = TyEmpty)
+                then t1
+              else raise InvalidType
+              )
+    )
 
+  (*C-HD*)
   
  
     
