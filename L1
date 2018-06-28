@@ -1,6 +1,29 @@
 (* TODO: arrumar raise *)
 
 
+(*
+    C-Num    ok
+    C-Bool   ok
+    C-Sum    ok
+    C-Eq     ok
+    C-If
+    C-Id
+    C-App
+    C-Fn     ok
+    C-Let
+    C-LetR
+    C-Nil    ok
+    C-Cons   ok
+    C-Hd
+    C-Tl
+    C-Isempty
+    C-Raise
+    C-Try
+
+*)
+
+
+
 type variable = string
 
 type operator = Sum | Diff | Mult | Div | Eq | Leq | Not | And | Or 
@@ -257,11 +280,6 @@ let rec eval context e  = ( match e with
 
 
 
-
-
-
-
-
 (* TypeInfer *)
 
 
@@ -342,12 +360,15 @@ let rec typecheck context e: tipo = match e with
               else raise InvalidType
               )
     )
+    
+    
 
 let env = [] ;;
-let t1 = Num(3) ;;
-let t15 = Bop(Mult, t1, t1) ;;
-let t21 = "variavelInt" ;;
-let t22 = Lam(t21,TyInt,t15);; (* int -> int *)
-let currentEnv = updateT ("variavelInt") (TyInt) ([]);;
-Printf.printf "Verificando fun: Lam(variavelInt, TyInt, Bop(Mult, Num(3), Num(3)) )  -----> %s" (typeToString (typecheck currentEnv t22)) ;; 
-
+let num = Num(3) ;;
+let t =  Bool(true);;
+let f = Bool(false);;
+let sum = Bop(Mult, Num(4), Num(5));;
+let var = "variavelInt" ;;
+let lam = Lam(var,TyInt,sum);; (* int -> int *)
+let currentEnv = updateT (var) (TyInt) ([]);;
+Printf.printf "Lam(var, TyInt, sum )  -----> %s" (typeToString (typecheck currentEnv lam)) ;; 
