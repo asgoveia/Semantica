@@ -6,12 +6,12 @@
     C-Bool   ok
     C-Sum    ok
     C-Eq     ok
-    C-If
-    C-Id
-    C-App
+    C-If     ok
+    C-Id     ok
+    C-App    ok
     C-Fn     ok
-    C-Let
-    C-LetR
+    C-Let    ok
+    C-LetR   
     C-Nil    ok
     C-Cons   ok
     C-Hd
@@ -71,6 +71,7 @@ exception Invalid_input ;;
 exception InvalidType ;;
 exception InvalidSearch ;;  
 exception InvalidLookupT ;;
+exception Invalid;;
      
      
 let rec exprToString (v:value) : string =
@@ -363,12 +364,37 @@ let rec typecheck context e: tipo = match e with
     
     
 
-let env = [] ;;
+let env = [];;
 let num = Num(3) ;;
 let t =  Bool(true);;
 let f = Bool(false);;
 let sum = Bop(Mult, Num(4), Num(5));;
+let ou = Bop(And, t, t);;
 let var = "variavelInt" ;;
 let lam = Lam(var,TyInt,sum);; (* int -> int *)
-let currentEnv = updateT (var) (TyInt) ([]);;
-Printf.printf "Lam(var, TyInt, sum )  -----> %s" (typeToString (typecheck currentEnv lam)) ;; 
+let currentEnv = updateT (var) (TyInt) (env);;
+let testeIf = If((t,t,f));;
+let app = App(lam,num) ;;
+let varBool = "variavelBool";;
+let envBool = updateT (varBool) (TyBool) (env);;
+let testeLet = Let(varBool, TyBool, testeIf, sum);;
+
+
+(*let testeLetRec = Lrec(varBool, TyInt,TyInt,varBool,TyInt,sum,sum);;*)
+
+
+Printf.printf "If((t,t,f)):  %s" (typeToString (typecheck [] testeIf)) ;;
+print_newline();;
+Printf.printf "Lam(var, TyInt, sum ): %s" (typeToString (typecheck currentEnv lam)) ;; 
+print_newline();;
+Printf.printf "App(Lam(variavelInt, TyInt, sum, num)): %s" (typeToString (typecheck currentEnv app)) ;; 
+print_newline();;
+Printf.printf "Let(variavelBool, TyBool, testeIf, sum): %s" (typeToString (typecheck envBool testeLet)) ;;
+print_newline();;
+Printf.printf "Id(variavelInt): %s" (typeToString (typecheck (currentEnv) (Var(var)))) ;;
+
+
+
+(*print_newline();;
+Printf.printf "Lrec(variavelBool, (TyInt,TyInt), (varBool,TyInt,sum), sum): %s" (typeToString (typecheck envBool testeLetRec)) ;; *)
+
