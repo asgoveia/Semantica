@@ -16,7 +16,7 @@ type expr = Num of int
           | Lam of variable * tipo * expr
           | Let of variable * tipo * expr * expr
           | Lrec of variable * tipo * tipo * variable * tipo * expr * expr
-          | Nil      
+          | Nil                   
           | Cons of expr * expr
           | IsEmpty of expr
           | First of expr
@@ -142,7 +142,7 @@ let rec eval context e  = ( match e with
         )
     )
     
-     (* C-NIL *)
+     (* BS-NIL *)
     | Nil -> Vnil
    
     
@@ -264,27 +264,6 @@ let rec eval context e  = ( match e with
 
 (* TypeInfer *)
 
-(*
-(C-Num) V
-(C-Bool) V
-(C-Sum) V
-(C-Eq) V
-(C-If) V
-(C-App) V
-(C-ID) V
-(C-Fn) V
-(C-Let) V
-(C-LetR)
-(C-Nil) ?
-(C-Cons)
-(C-Hd)
-(C-Tl)
-(C-IsEmpty)
-(C-Raise)
-(C-Try)
-
-*)
-
 
 let rec typecheck context e: tipo = match e with
   (* Values *)
@@ -324,7 +303,6 @@ let rec typecheck context e: tipo = match e with
   | Var(v) -> lookupT v context
   
   
-  
 
   (* Application *)
   | App(e1,e2) ->
@@ -342,20 +320,8 @@ let rec typecheck context e: tipo = match e with
     (if x == t (*if the expression e1 is right (of type t)*)
         then typecheck (updateT variable t context) e2 (*ten the output is of typecheck(e2)*)
         else raise InvalidType)
-    
-  (* Let Rec 
-  | Lrec(func, (ty1, ty2), (var, ty3, e1), e2) ->
-    let ty4 = TyFn(ty1,ty2) in
-    let update1 = updateT var ty3 environment in
-    let update2 = updateT func ty4 update1 in
-    let ty5 = typecheck update2 e1 in (
-      if ty5 == ty2 && ty1 == ty3
-      then typecheck (updateT func ty4 environment) e2
-      else raise InvalidType
-    )
-    *)
-
-    
+        
+        
   (*C-Nil*)
   | Nil -> TyEmpty
     
@@ -377,24 +343,11 @@ let rec typecheck context e: tipo = match e with
               )
     )
 
-  (*C-HD*)
-  
- 
-    
-    
-;;
+let env = [] ;;
+let t1 = Num(3) ;;
+let t15 = Bop(Mult, t1, t1) ;;
+let t21 = "variavelInt" ;;
+let t22 = Lam(t21,TyInt,t15);; (* int -> int *)
+let currentEnv = updateT ("variavelInt") (TyInt) ([]);;
+Printf.printf "Verificando fun: Lam(variavelInt, TyInt, Bop(Mult, Num(3), Num(3)) )  -----> %s" (typeToString (typecheck currentEnv t22)) ;; 
 
-
-
-let expBopSum = eval []  (Bop(Sum,Num(5),Num(10)));;
-let expIsEmptyBool = eval [] (If(IsEmpty(Nil),Bool(true),Bool(false)));;
-let x = exprToString(expBopSum);;
-Printf.printf "======  %s   ========" x;;
-
-let tipoBopNum = typecheck [] (Bop(Sum,Num(5),Num(10)));;
-let tipoBopBool = typecheck [] (Bop(Or,Bool(true),Bool(false)));;
-let tipoIfBool = typecheck [] (If(Bool(true),Bool(true),Bool(false)));;
-let tipoLetFn = typecheck [] (Let("myVar", TyInt, Num(5), Bop(Sum,Var("myVar"), Num(5))));;
-
-let y =  typeToString(tipoLetFn);;
-Printf.printf "=======  %s  ========" y;
